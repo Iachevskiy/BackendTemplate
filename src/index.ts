@@ -8,16 +8,16 @@ import CustomAuthChecker from './CustomAuthChecker'
 import CustomResolvers from './CustomResolvers'
 import './Permissions'
 import { verifyToken } from "./Utils";
-const dotenv = require('dotenv');
 
 
 const prisma = new PrismaClient()
 
 const app = async () => {
-    dotenv.config();  // <- This line was added
+
     const schema = await buildSchema({
-        resolvers: [...resolvers, ...CustomResolvers],
+        resolvers: [...resolvers, ...CustomResolvers ],
         authChecker: CustomAuthChecker,
+        validate: { forbidUnknownValues: false }
     })
 
     const server = new ApolloServer({
@@ -34,7 +34,7 @@ const app = async () => {
                 };
             }
 
-
+            console.log('ApolloServer authHeader 2', authHeader)
             const { userId, role} = await verifyToken(token);
 
             return {
