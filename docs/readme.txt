@@ -8,7 +8,9 @@ Next steps:
 База данных в настоящее время не существует. Prisma создаст базу данных prisma/dev.db при первой миграции.
 
 Миграция:
-npx prisma migrate dev --name init
+создание: npx prisma migrate dev --create-only --name init
+пуш: npx prisma migrate dev
+
 
 Команда создает миграцию с именем init. После завершения миграции создается новый /prisma/migrations каталог.
 Поскольку вы работаете с SQLite, Prisma CLI создаст вашу базу данных и применит изменения к вашей базе данных.

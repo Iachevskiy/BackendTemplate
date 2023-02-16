@@ -1,12 +1,5 @@
-// export interface IErrorMessage {
-//
-// }
-
-// import {AuthenticationError} from "apollo-server";
-
 export enum EErrors {
   hasNotToken = 'hasNotToken',
-
 }
 
 export enum EErrorsTypes {
@@ -19,6 +12,8 @@ export enum EErrorsTypes {
 
 export const ERRORS_TRANSLATION = {
   [EErrors.hasNotToken]: 'Отсутствует токен авторизации, авторизуйтесь, пожалуйста'
-  // [EErrors.SyntaxError]: tt('shared.vatRate.vat0')
-  // [EErrors.ValidationError]: tt('shared.vatRate.vatNone'),
+}
+
+export const ERRORS_HTTP_CODE = {
+  [EErrors.hasNotToken]: 404
 }

@@ -10,16 +10,6 @@ import {
 
 // import { UserWithToken } from '../../../Types'
 
-// @ts-expect-error
-import firebaseAdmin from 'firebase-admin'
-// import apolo from 'apollo-server'
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const serviceAccount = require('./config/authscud-firebase-adminsdk-9md8w-13739530a5.json')
-
-firebaseAdmin.initializeApp({
-  credential: firebaseAdmin.credential.cert(serviceAccount)
-})
-
 // import { signToken, verifyPassword } from '../../../Utils'
 
 @Resolver()
