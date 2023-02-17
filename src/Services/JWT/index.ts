@@ -3,11 +3,47 @@ import cookie from 'cookie'
 import Prisma from '../Prisma'
 import { type User } from '@generated/type-graphql'
 
-const getTokens = (context: Record<string, any>) => {
+const getTokens = (context: Record<string, any>): Record<string, any> => {
   const cookies = cookie.parse(context.req.headers.cookie || '')
   return {
     accessToken: cookies.accessToken,
     refreshToken: cookies.refreshToken
+  }
+}
+const verifyToken = (token: string): string => {
+  const data: Record<string, any> = jwt.verify(token, process.env.JWT_SECRET) as Record<string, any>
+  return data.userId
+}
+
+const createAndSendTokens = async (context: Record<string, any>, userId: string, tokens: Array<'accessToken' | 'refreshToken'>): Promise<void> => {
+  const cookie = []
+  if (tokens.length) {
+    if (tokens.includes('accessToken')) {
+      const token = jwt.sign({ userId, token: 'access' }, process.env.JWT_SECRET)
+      const timeout = 60 * 60 // секунды / час
+      cookie.push(`accessToken=${token};Max-Age=${timeout}`)
+    }
+    if (tokens.includes('refreshToken')) {
+      const token = jwt.sign({ userId, token: 'refresh' }, process.env.JWT_SECRET)
+      // рефреш токен сохраняем в базе у юзера
+      try {
+        await Prisma.user.update({
+          where: {
+            id: userId
+          },
+          data: {
+            refreshToken: token
+          }
+        })
+        const timeout = 60 * 60 * 2 // секунды
+        cookie.push(`refreshToken=${token};Max-Age=${timeout}`)
+      } catch (e) {
+        console.log('error on update refreshToken')
+      }
+    }
+    if (cookie.length) {
+      context.res.setHeader('Set-Cookie', cookie)
+    }
   }
 }
 
@@ -23,62 +59,33 @@ const fetchUser = async (userId: string): Promise<any> => {
   }
 }
 
-const setToken = (context: Record<string, any>, typeToken: 'accessToken' | 'refreshToken', token): void => {
-  context.res.setHeader('Set-Cookie', cookie.serialize(typeToken, token, {
-    httpOnly: true,
-    maxAge: 60 * 60 // 1 час
-  }))
-}
-
-const createToken = (userId: string): string => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET)
-}
-
-const verifyToken = (token: string): string => {
-  const data: Record<string, any> = jwt.verify(token, process.env.JWT_SECRET) as Record<string, any>
-  return data.userId
-}
-
 // Создаем токены, отправляем куками на клиент, рефреш токен сохраняем в базе у юзера
 const login = async (context: Record<string, any>, phoneUser: string): Promise<User | null> => {
   let userData: User | null = null
-  // Ищем юзера по телефону в базе
+
+  // Ищем юзера по телефону в базе или создаем
   try {
     userData = await Prisma.user.findUnique({
       where: { phone: phoneUser }
     })
-  } catch (e) {
-    console.log('user not found')
-  }
 
-  if (userData) {
-    const accessToken = createToken(userData.id)
-    const refreshToken = createToken(userData.id)
-
-    // рефреш токен сохраняем в базе у юзера
-    try {
-      await Prisma.user.update({
-        where: {
-          id: userData.id
-        },
+    if (!userData) {
+      userData = await Prisma.user.create({
         data: {
-          refreshToken
+          phone: phoneUser
         }
       })
-    } catch (e) {
-      console.log('error on update refreshToken')
     }
 
-    setToken(context, 'accessToken', accessToken)
-    setToken(context, 'refreshToken', refreshToken)
+    await createAndSendTokens(context, userData.id, ['accessToken', 'refreshToken'])
 
     delete userData.refreshToken
     return userData
+  } catch (e) {
+    console.log('user not found')
   }
 }
 
-// Принимаем:
-// res - для удаления кук с клиента
 const logout = async (context: Record<string, any>, userId: string): Promise<void> => {
   console.log('logout')
   // Очищяем токены, удаляя соответствующие куки у клиента, очищаем рефреш токен в базе
@@ -91,8 +98,11 @@ const logout = async (context: Record<string, any>, userId: string): Promise<voi
         refreshToken: null
       }
     })
-    setToken(context, 'accessToken', null)
-    setToken(context, 'refreshToken', null)
+    context.res.setHeader('Set-Cookie',
+      [
+        'accessToken=delete; expires=Thu, 01 Jan 1970 00:00:00 GMT',
+        'refreshToken=delete; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+      ])
   } catch (e) {
     console.log('error can not logout')
   }
@@ -100,9 +110,7 @@ const logout = async (context: Record<string, any>, userId: string): Promise<voi
 
 // Проверяем токены юзыра, если что обновляем первый токен или разлогиниваем
 const verifyUser = async (context: Record<string, any>): Promise<any> => {
-  console.log('verifyUser')
   const { accessToken, refreshToken } = getTokens(context)
-
   let userId: string
   let userData: any = null
 
@@ -124,7 +132,8 @@ const verifyUser = async (context: Record<string, any>): Promise<any> => {
   if (!userId) {
     try {
       userId = verifyToken(refreshToken)
-      userData = fetchUser(userId)
+      userData = await fetchUser(userId)
+
       if (userData.refreshToken !== refreshToken) {
         console.error('userData.refreshToken !== refreshToken')
         throw new Error('')
@@ -137,7 +146,7 @@ const verifyUser = async (context: Record<string, any>): Promise<any> => {
 
   if (!userData) {
     try {
-      userData = fetchUser(userId)
+      userData = await fetchUser(userId)
     } catch (e) {
       console.error('load userData')
       throw new Error('')
@@ -145,15 +154,14 @@ const verifyUser = async (context: Record<string, any>): Promise<any> => {
   }
 
   if (!accessToken) {
-    const accessToken = createToken(userId)
-    setToken(context, 'accessToken', accessToken)
+    console.log('accessToken create new')
+    await createAndSendTokens(context, userData.id, ['accessToken'])
   }
 
   return userData
 }
 
 export default {
-  createToken,
   verifyToken,
   login,
   logout,
