@@ -3,8 +3,10 @@ import { AuthenticationError } from 'apollo-server'
 import { EErrors, ERoles } from '../Types'
 
 import { verifyPassword, verifyToken, signToken } from '../Utils'
+import JWT from '../Services/JWT'
 
 export default async ({ root, args, context, info }, roles) => {
+  // JWT.verifyUser(context)
   // // throw new AuthenticationError(EErrors.hasNotToken)
   // const accessToken = signToken({ userId: '1', ttt: 'ggg' })
   // const refreshToken = signToken({})

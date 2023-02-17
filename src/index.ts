@@ -2,6 +2,7 @@ import 'reflect-metadata'
 
 import { ApolloServer } from 'apollo-server'
 import prisma from './Services/Prisma'
+import JWT from './Services/JWT'
 
 import { buildSchema } from 'type-graphql'
 import { resolvers } from '@generated/type-graphql'
@@ -20,11 +21,12 @@ const app = async (): Promise<void> => {
 
   const server = new ApolloServer({
     schema,
-    context: async ({ req, res }) => {
+    context: async (context) => {
+      // JWT.verifyUser(context)
       return {
         prisma,
-        res,
-        req
+        res: context.res,
+        req: context.req
       }
     },
     csrfPrevention: true,
