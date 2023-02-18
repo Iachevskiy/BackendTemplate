@@ -1,4 +1,4 @@
-import { ERRORS_TRANSLATION, ERRORS_HTTP_CODE } from '../../Types'
+import { ERRORS_TRANSLATION, ERRORS_HTTP_CODE } from '@/Types'
 
 export default {
   async requestDidStart () {

@@ -7,9 +7,10 @@ import {
 
 import { User } from '@generated/type-graphql'
 import { AuthenticationError } from 'apollo-server'
-import { EErrors } from '../../Types'
-import Firebase from '../../Services/Firebase'
-import JWT from '../../Services/JWT'
+import { EErrors } from '@/Types'
+import Firebase from '@/Services/Firebase'
+
+import { AuthModel } from '@/Models'
 
 @Resolver()
 export class CustomResolverAuth {
@@ -17,7 +18,7 @@ export class CustomResolverAuth {
   @Query(returns => User, { nullable: true })
   async verification (@Ctx() context): Promise<User | null> {
     try {
-      const userData = await JWT.verifyUser(context)
+      const userData = await AuthModel.verifyUser(context)
       return userData
     } catch (e) {
       throw new AuthenticationError(EErrors.hasNotToken)
@@ -28,7 +29,7 @@ export class CustomResolverAuth {
   @Query(returns => User, { nullable: true })
   async logout (@Ctx() context, @Arg('userId') userId: string): Promise<null> {
     try {
-      await JWT.logout(context, userId)
+      await AuthModel.logout(context, userId)
     } catch (e) {
 
     }
@@ -43,7 +44,7 @@ export class CustomResolverAuth {
       // eslint-disable-next-line @typescript-eslint/naming-convention
       const { phone_number } = await Firebase.verifyByToken(tokenFirebase)
       // логинем
-      const user: User = await JWT.login(context, phone_number)
+      const user: User = await AuthModel.login(context, phone_number)
 
       console.log('user', user)
 
@@ -58,7 +59,7 @@ export class CustomResolverAuth {
   @Query(returns => User, { nullable: true })
   async liteLogin (@Ctx() context): Promise<User | null> {
     try {
-      const user: User = await JWT.login(context, '+79228360292')
+      const user: User = await AuthModel.login(context, '+79228360292')
 
       console.log('user', user)
 
