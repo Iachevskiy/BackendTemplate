@@ -1,7 +1,10 @@
 import 'module-alias/register'
 import 'reflect-metadata'
 
+import * as dotenv from 'dotenv'
+
 import ApoloServer from '@/Services/ApoloServer'
+dotenv.config()
 
 const app = async (): Promise<void> => {
   const server = await ApoloServer()

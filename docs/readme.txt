@@ -1,3 +1,8 @@
+добавить енв:
+JWT_SECRET="secret"
+
+добавить конфиг firebaseAdmin в src/Services/Firebase/config брать из косоли гугла
+
 Prisma:
 Next steps:
 1. Set the DATABASE_URL in the .env file to point to your existing database. If your database has no tables yet, read https://pris.ly/d/getting-started
